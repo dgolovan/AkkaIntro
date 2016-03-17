@@ -23,7 +23,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll {
 
       dispatcherActor ! RequestDispatcherActor.DispatchRequests(requests)
       sessionActorMock.expectMsgPF() {
-        case _: AddRequest => Unit
+        case _: AddRequest => false
         case _ => throw new IllegalStateException()
       }
     }
