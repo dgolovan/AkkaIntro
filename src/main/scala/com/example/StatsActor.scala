@@ -52,7 +52,7 @@ class StatsActor extends Actor with ActorLogging {
   }
 
   private def processRequestsPerPage(requests: List[Request]): Unit = {
-    val urlsStats: Map[String, Int] =  requests.map(r => r.url).groupBy(identity).mapValues(_.size)
+    val urlsStats: Map[String, Int] = requests.map(r => r.url).groupBy(identity).mapValues(_.size)
 
     urlsStats.foreach {
       case (url, count) =>
@@ -64,12 +64,9 @@ class StatsActor extends Actor with ActorLogging {
 }
 
 object StatsActor {
-
   case class AggregateStats(requests: List[Request])
 
   def props: Props = {
     Props(new StatsActor)
   }
-
-
 }

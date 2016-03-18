@@ -1,8 +1,8 @@
 package com.example
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-import com.example.events.{EventProducer, Request, Session}
+import com.example.events.{EventProducer, Request}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
@@ -20,7 +20,7 @@ class SessionActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
     "receive an event and add it to history" in {
       val request: Request = new EventProducer(1).tick.head
       val timeoutDuration = 10.seconds
-      val sessionActor = TestActorRef(new SessionActor(request.session, timeoutDuration))
+      val sessionActor = TestActorRef(new SessionActor(request.session, timeoutDuration, TestProbe().ref))
       sessionActor ! SessionActor.AddRequest(request)
       sessionActor.underlyingActor.requestHistory.size shouldBe 1
     }
@@ -31,7 +31,7 @@ class SessionActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val request: Request = new EventProducer(1).tick.head
       val timeoutDuration = 100.millis
 
-      val sessionActor = TestActorRef(new SessionActor(request.session, timeoutDuration))
+      val sessionActor = TestActorRef(new SessionActor(request.session, timeoutDuration, TestProbe().ref))
 
       val probe = TestProbe()
       probe.watch(sessionActor)
@@ -48,25 +48,13 @@ class SessionActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val timeoutDuration = 100.millis
 
       val statsActorMock = TestProbe()
-      val sessionActor = system.actorOf(Props(new MockSessionActor(statsActorMock.ref, request.session, timeoutDuration)))
+      system.actorOf(Props(new SessionActor(request.session, timeoutDuration, statsActorMock.ref)))
 
-      statsActorMock.expectMsgPF() {
+      statsActorMock.expectMsgPF(200.millis) {
         case _: StatsActor.AggregateStats => false
         case _ => throw new IllegalStateException()
       }
-
     }
   }
-
-  /**
-    * Mock session actor
-    */
-  class MockSessionActor(statsActor: ActorRef, session: Session, timeoutDuration: FiniteDuration) extends SessionActor(session, timeoutDuration) {
-
-    override def createStatsActor(): ActorRef = {
-      statsActor
-    }
-  }
-
 
 }

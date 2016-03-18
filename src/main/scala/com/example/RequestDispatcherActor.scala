@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 /**
   * Created by denisg on 2016-03-17.
   */
-class RequestDispatcherActor extends Actor with ActorLogging {
+class RequestDispatcherActor(statsActor: ActorRef) extends Actor with ActorLogging {
 
   private val sessionMap: MutableMap[Session, ActorRef] = MutableMap()
   private val timeoutDuration: FiniteDuration = context.system.settings.config.getDuration("main.session-timeout", MINUTES) millis
@@ -25,7 +25,7 @@ class RequestDispatcherActor extends Actor with ActorLogging {
   }
 
   private[example] def createSessionActor(session: Session): ActorRef = {
-    context.actorOf(SessionActor.props(session, timeoutDuration))
+    context.actorOf(SessionActor.props(session, timeoutDuration, statsActor))
   }
    // TODO watch childs
 }
@@ -34,8 +34,8 @@ object RequestDispatcherActor {
 
   case class DispatchRequests(requests: List[Request])
 
-  def props: Props = {
-    Props(new RequestDispatcherActor)
+  def props(statsActor: ActorRef): Props = {
+    Props(new RequestDispatcherActor(statsActor))
   }
 
 

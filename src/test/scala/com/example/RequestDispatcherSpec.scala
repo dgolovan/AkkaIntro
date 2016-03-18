@@ -32,7 +32,7 @@ with WordSpecLike with Matchers with BeforeAndAfterAll {
   /**
     * Mock overrides creating real session actor with TestProbe
     */
-  class MockDispatcherActor(sessionActor: ActorRef) extends RequestDispatcherActor {
+  class MockDispatcherActor(sessionActor: ActorRef) extends RequestDispatcherActor(TestProbe().ref) {
 
     override def createSessionActor(session: Session): ActorRef = {
       sessionActor
