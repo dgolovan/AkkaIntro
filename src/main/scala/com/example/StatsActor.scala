@@ -4,15 +4,17 @@ import java.time.format.DateTimeFormatter
 import java.time.{Instant, LocalDateTime, ZoneOffset}
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.example.StatsActor.AggregateStats
+import akka.event.LoggingReceive
+import com.example.StatsActor.{AggregateStats, StatstActorException}
 import com.example.events.Request
 
 import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
+import scala.util.Random
 
 /**
   * Created by denisg on 2016-03-17.
   */
-class StatsActor extends Actor with ActorLogging {
+class StatsActor(accuracy: Int) extends Actor with ActorLogging {
 
   private[example] val requestsPerBrowser: MutableMap[String, Int] = MutableMap().withDefaultValue(0)
   private[example] val requestsPerMinute: MutableMap[String, Int] = MutableMap().withDefaultValue(0)
@@ -21,8 +23,16 @@ class StatsActor extends Actor with ActorLogging {
   private val requestsPerReferrer: MutableMap[String, Int] = MutableMap().withDefaultValue(0)
 
 
-  def receive = {
+  private def checkHealth(): Unit = {
+    if (accuracy <= Random.nextInt(100)) {
+      throw StatstActorException
+    }
+  }
+
+  override def receive:Receive = LoggingReceive {
     case AggregateStats(requests) =>
+
+      checkHealth()
       processRequestsPerBrowser(requests)
       processRequestsPerMinute(requests)
       processRequestsPerPage(requests)
@@ -64,9 +74,11 @@ class StatsActor extends Actor with ActorLogging {
 }
 
 object StatsActor {
+  def props(accuracy: Int): Props = {
+    Props(new StatsActor(accuracy))
+  }
+
   case class AggregateStats(requests: List[Request])
 
-  def props: Props = {
-    Props(new StatsActor)
-  }
+  case object StatstActorException extends IllegalStateException
 }

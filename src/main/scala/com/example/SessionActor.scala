@@ -1,6 +1,7 @@
 package com.example
 
 import akka.actor._
+import akka.event.LoggingReceive
 import com.example.SessionActor.{InactivityTimeout, AddRequest}
 import com.example.events.{Request, Session}
 
@@ -8,13 +9,14 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
 class SessionActor(session: Session, timeoutDuration: FiniteDuration, statsActor: ActorRef) extends Actor with ActorLogging {
+
   import context.dispatcher
 
   private var inactivityTimer: Cancellable = rescheduleInactivityTimeout()
 
   private[example] val requestHistory: ListBuffer[Request] = ListBuffer()
 
-  def receive = {
+  override def receive: Receive = LoggingReceive {
     case AddRequest(request) =>
       requestHistory += request
 
@@ -35,7 +37,9 @@ class SessionActor(session: Session, timeoutDuration: FiniteDuration, statsActor
 }
 
 object SessionActor {
+
   case class AddRequest(request: Request)
+
   case object InactivityTimeout
 
   def props(session: Session, timeoutDuration: FiniteDuration, statsActor: ActorRef): Props = {
